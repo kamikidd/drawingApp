@@ -65,6 +65,7 @@ function DrawingCanvas({ color, lineWidth }) {
     ctx.resetTransform();
     ctx.scale(dpr, dpr);
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctxRef.current = ctx;
 
     redraw();
