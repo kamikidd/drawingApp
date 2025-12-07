@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 
-function DrawingCanvas({ color, lineWidth }) {
+function DrawingCanvas({ color, lineWidth, tool }) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
 
@@ -35,8 +35,13 @@ function DrawingCanvas({ color, lineWidth }) {
     clearCanvasInternal();
 
     historyRef.current.forEach((stroke) => {
+      ctx.globalCompositeOperation =
+        stroke.tool === "eraser" ? "destination-out" : "source-over";
+
       ctx.strokeStyle = stroke.color;
       ctx.lineWidth = stroke.lineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       stroke.points.forEach((p, i) => {
         if (i === 0) ctx.moveTo(p.x, p.y);
@@ -94,7 +99,14 @@ function DrawingCanvas({ color, lineWidth }) {
   const startDrawing = (e) => {
     const pos = getMousePos(e);
     const ctx = ctxRef.current;
-    ctx.strokeStyle = color;
+
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = color;
+    }
+
     ctx.lineWidth = lineWidth;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -106,7 +118,14 @@ function DrawingCanvas({ color, lineWidth }) {
     if (!isDrawing) return;
     const pos = getMousePos(e);
     const ctx = ctxRef.current;
-    ctx.strokeStyle = color;
+
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = color;
+    }
+
     ctx.lineWidth = lineWidth;
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
@@ -118,7 +137,12 @@ function DrawingCanvas({ color, lineWidth }) {
     setIsDrawing(false);
     ctxRef.current.closePath();
 
-    const stroke = { color, lineWidth, points: currentStroke };
+    const stroke = {
+      tool,
+      color,
+      lineWidth,
+      points: currentStroke,
+    };
 
     const nextHistory = [...historyRef.current, stroke];
     historyRef.current = nextHistory;
@@ -172,15 +196,15 @@ function DrawingCanvas({ color, lineWidth }) {
 
   return (
     <div id="drawingCanvas">
-      <button onClick={undo}>
+      <button className="button" onClick={undo}>
         {" "}
         <i className="fas fa-rotate-left"></i>
       </button>
-      <button onClick={redo}>
+      <button className="button" onClick={redo}>
         {" "}
         <i className="fas fa-rotate-right"></i>
       </button>
-      <button onClick={clearCanvas}>
+      <button className="button" onClick={clearCanvas}>
         {" "}
         <i className="fa-regular fa-trash-can"></i>
       </button>

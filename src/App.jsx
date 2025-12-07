@@ -6,6 +6,8 @@ function App() {
   const [darkmode, setDarkmode] = useState(false);
   const [color, setColor] = useState("#000000");
   const [lineWidth, setLineWidth] = useState(7);
+  const [tool, setTool] = useState("brush");
+
   const canvasRef = useRef();
 
   return (
@@ -45,6 +47,26 @@ function App() {
           </div>
           <div className="tool-group">
             <button
+              className={` ${tool === "brush" ? "btn-active" : "btn btn-icon"}`}
+              title="Brush"
+              onClick={() => {
+                setTool("brush");
+              }}
+            >
+              <i className="fas fa-paint-brush"></i>
+            </button>
+            <button
+              className={` ${
+                tool === "eraser" ? "btn-active" : "btn btn-icon"
+              }`}
+              title="Eraser"
+              onClick={() => {
+                setTool("eraser");
+              }}
+            >
+              <i className="fas fa-eraser"></i>
+            </button>
+            <button
               className="btn btn-icon "
               id="fullScreenBtn"
               title="Toggle Full Screen"
@@ -64,7 +86,12 @@ function App() {
           </div>
         </div>
       </div>
-      <DrawingCanvas ref={canvasRef} color={color} lineWidth={lineWidth} />
+      <DrawingCanvas
+        ref={canvasRef}
+        color={color}
+        lineWidth={lineWidth}
+        tool={tool}
+      />
     </div>
   );
 }

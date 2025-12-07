@@ -23,6 +23,7 @@ body {
   --primary-color: #6a5af9;
   --primary-glow: rgba(106, 90, 249, 0.4);
   --danger-color: #e74c3c;
+  --selected-btn: #d2c4e8;
   --danger-glow: rgba(231, 76, 60, 0.4);
   --bg-color: var(--bg-color-light);
   --text-color: var(--text-color-light);
@@ -190,6 +191,34 @@ input[type="range"]::-webkit-slider-thumb {
 .btn.btn-icon:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(2, 1, 1, 0.1);
+}
+
+.btn-active {
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 18px;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  transition: all 0.2s;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--selected-btn);
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  margin-right: 4px;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: border-color 0.25s;
 }
 
 #fullScreenBtn:hover,
