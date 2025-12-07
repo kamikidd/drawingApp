@@ -185,10 +185,11 @@ function DrawingCanvas({ color, lineWidth }) {
       </button>
       <canvas
         ref={canvasRef}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={endDrawing}
-        onMouseLeave={endDrawing}
+        onPointerDown={startDrawing}
+        onPointerMove={draw}
+        onPointerUp={endDrawing}
+        onPointerLeave={endDrawing}
+        style={{ touchAction: "none" }}
       />
     </div>
   );
