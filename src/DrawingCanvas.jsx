@@ -3,18 +3,22 @@ import { useRef, useState, useEffect } from "react";
 function DrawingCanvas({ color, lineWidth, tool }) {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
-  const lastTouchDistance = useRef(null);
-  const lastTouchCenter = useRef(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentStroke, setCurrentStroke] = useState([]);
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   const historyRef = useRef([]);
   const redoRef = useRef([]);
+
+  // ✅ Camera (zoom + pan)
+  const scaleRef = useRef(1);
+  const offsetRef = useRef({ x: 0, y: 0 });
+
+  const pinchStartDist = useRef(null);
+  const pinchStartScale = useRef(1);
+  const pinchStartCenter = useRef(null);
 
   const redraw = () => {
     const ctx = ctxRef.current;
@@ -66,6 +70,67 @@ function DrawingCanvas({ color, lineWidth, tool }) {
     redraw();
   };
 
+  // ---------- Coordinate conversion ----------
+  const screenToCanvas = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - offsetRef.current.x) / scaleRef.current;
+    const y = (e.clientY - rect.top - offsetRef.current.y) / scaleRef.current;
+    return { x, y };
+  };
+
+  const touchToCanvas = (t) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (t.clientX - rect.left - offsetRef.current.x) / scaleRef.current;
+    const y = (t.clientY - rect.top - offsetRef.current.y) / scaleRef.current;
+    return { x, y };
+  };
+  // ---------- Pinch Zoom ----------
+  const getDist = (t1, t2) => {
+    const dx = t2.clientX - t1.clientX;
+    const dy = t2.clientY - t1.clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const getCenter = (t1, t2) => ({
+    x: (t1.clientX + t2.clientX) / 2,
+    y: (t1.clientY + t2.clientY) / 2,
+  });
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const [a, b] = e.touches;
+      pinchStartDist.current = getDist(a, b);
+      pinchStartScale.current = scaleRef.current;
+      pinchStartCenter.current = getCenter(a, b);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+
+      const [a, b] = e.touches;
+      const newDist = getDist(a, b);
+      const newCenter = getCenter(a, b);
+
+      const scale =
+        pinchStartScale.current * (newDist / pinchStartDist.current);
+
+      scaleRef.current = Math.min(Math.max(scale, 0.5), 4);
+
+      // pan with fingers
+      offsetRef.current.x += newCenter.x - pinchStartCenter.current.x;
+      offsetRef.current.y += newCenter.y - pinchStartCenter.current.y;
+
+      pinchStartCenter.current = newCenter;
+      redraw();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    pinchStartDist.current = null;
+  };
+
   const getPointerPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
@@ -75,7 +140,9 @@ function DrawingCanvas({ color, lineWidth, tool }) {
   };
 
   const startDrawing = (e) => {
-    const pos = getPointerPos(e);
+    if (e.pointerType === "touch" && e.isPrimary === false) return;
+
+    const pos = screenToCanvas(e);
     const ctx = ctxRef.current;
     const pressure = e.pressure && e.pressure !== 0 ? e.pressure : 1;
 
@@ -99,7 +166,7 @@ function DrawingCanvas({ color, lineWidth, tool }) {
 
   const draw = (e) => {
     if (!isDrawing) return;
-    const pos = getPointerPos(e);
+    const pos = screenToCanvas(e);
     const ctx = ctxRef.current;
     const pressure = e.pressure && e.pressure !== 0 ? e.pressure : 1;
 
@@ -178,52 +245,6 @@ function DrawingCanvas({ color, lineWidth, tool }) {
     clearCanvasInternal();
   };
 
-  const getTouchDistance = (t1, t2) => {
-    const dx = t2.clientX - t1.clientX;
-    const dy = t2.clientY - t1.clientY;
-    return Math.hypot(dx, dy);
-  };
-
-  const getTouchCenter = (t1, t2) => ({
-    x: (t1.clientX + t2.clientX) / 2,
-    y: (t1.clientY + t2.clientY) / 2,
-  });
-  const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
-      const [t1, t2] = e.touches;
-      lastTouchDistance.current = getTouchDistance(t1, t2);
-      lastTouchCenter.current = getTouchCenter(t1, t2);
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-
-      const [t1, t2] = e.touches;
-      const newDistance = getTouchDistance(t1, t2);
-      const newCenter = getTouchCenter(t1, t2);
-
-      const scaleChange = newDistance / lastTouchDistance.current;
-
-      setScale((prev) => {
-        const next = Math.min(Math.max(prev * scaleChange, 0.5), 5);
-        return next;
-      });
-
-      setOffset((prev) => ({
-        x: prev.x + (newCenter.x - lastTouchCenter.current.x),
-        y: prev.y + (newCenter.y - lastTouchCenter.current.y),
-      }));
-
-      lastTouchDistance.current = newDistance;
-      lastTouchCenter.current = newCenter;
-    }
-  };
-  const handleTouchEnd = () => {
-    lastTouchDistance.current = null;
-    lastTouchCenter.current = null;
-  };
   useEffect(() => {
     historyRef.current = history;
   }, [history]);
@@ -274,11 +295,7 @@ function DrawingCanvas({ color, lineWidth, tool }) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{
-          touchAction: "none",
-          transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-          transformOrigin: "0 0",
-        }}
+        style={{ touchAction: "none" }}
       />
     </div>
   );
