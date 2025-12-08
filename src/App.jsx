@@ -17,7 +17,7 @@ function App() {
       }`}
     >
       <div className="top-bar">
-        <h1> Drawing App Pro</h1>
+        <h1>Myra's HUA BAN</h1>
         <div className="toolbar">
           <div className="tool-group">
             <div className="tool">
