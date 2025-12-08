@@ -25,6 +25,9 @@ function DrawingCanvas({ color, lineWidth, tool }) {
     if (!ctx) return;
 
     clearCanvasInternal();
+    // Apply camera
+    ctx.translate(offsetRef.current.x, offsetRef.current.y);
+    ctx.scale(scaleRef.current, scaleRef.current);
 
     historyRef.current.forEach((stroke) => {
       ctx.globalCompositeOperation =
