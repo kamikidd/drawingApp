@@ -37,7 +37,7 @@ function App() {
                   type="range"
                   id="brushSize"
                   min="1"
-                  max="40"
+                  max="100"
                   defaultValue="7"
                   onChange={(e) => setLineWidth(Number(e.target.value))}
                 />

@@ -12,22 +12,6 @@ function DrawingCanvas({ color, lineWidth, tool }) {
   const historyRef = useRef([]);
   const redoRef = useRef([]);
 
-  useEffect(() => {
-    historyRef.current = history;
-  }, [history]);
-
-  useEffect(() => {
-    redoRef.current = redoStack;
-  }, [redoStack]);
-
-  const clearCanvasInternal = () => {
-    const ctx = ctxRef.current;
-    const canvas = canvasRef.current;
-    if (!ctx || !canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, rect.width, rect.height);
-  };
-
   const redraw = () => {
     const ctx = ctxRef.current;
     if (!ctx) return;
@@ -44,6 +28,8 @@ function DrawingCanvas({ color, lineWidth, tool }) {
       ctx.lineJoin = "round";
       ctx.beginPath();
       stroke.points.forEach((p, i) => {
+        ctx.lineWidth = stroke.lineWidth * (p.pressure || 1);
+
         if (i === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       });
@@ -76,19 +62,7 @@ function DrawingCanvas({ color, lineWidth, tool }) {
     redraw();
   };
 
-  useEffect(() => {
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, []);
-
-  useEffect(() => {
-    if (!ctxRef.current) return;
-    ctxRef.current.strokeStyle = color;
-    ctxRef.current.lineWidth = lineWidth;
-  }, [color, lineWidth]);
-
-  const getMousePos = (e) => {
+  const getPointerPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
@@ -97,8 +71,9 @@ function DrawingCanvas({ color, lineWidth, tool }) {
   };
 
   const startDrawing = (e) => {
-    const pos = getMousePos(e);
+    const pos = getPointerPos(e);
     const ctx = ctxRef.current;
+    const pressure = e.pressure && e.pressure !== 0 ? e.pressure : 1;
 
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
@@ -107,17 +82,22 @@ function DrawingCanvas({ color, lineWidth, tool }) {
       ctx.strokeStyle = color;
     }
 
-    ctx.lineWidth = lineWidth;
+    ctx.lineWidth = lineWidth * pressure;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
-    setCurrentStroke([pos]);
+    //draw point
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+
+    setCurrentStroke([{ ...pos, pressure }]);
     setIsDrawing(true);
   };
 
   const draw = (e) => {
     if (!isDrawing) return;
-    const pos = getMousePos(e);
+    const pos = getPointerPos(e);
     const ctx = ctxRef.current;
+    const pressure = e.pressure && e.pressure !== 0 ? e.pressure : 1;
 
     if (tool === "eraser") {
       ctx.globalCompositeOperation = "destination-out";
@@ -126,10 +106,10 @@ function DrawingCanvas({ color, lineWidth, tool }) {
       ctx.strokeStyle = color;
     }
 
-    ctx.lineWidth = lineWidth;
+    ctx.lineWidth = lineWidth * pressure;
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-    setCurrentStroke((p) => [...p, pos]);
+    setCurrentStroke((p) => [...p, { ...pos, pressure }]);
   };
 
   const endDrawing = () => {
@@ -193,6 +173,33 @@ function DrawingCanvas({ color, lineWidth, tool }) {
     setRedoStack([]);
     clearCanvasInternal();
   };
+
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(() => {
+    redoRef.current = redoStack;
+  }, [redoStack]);
+
+  const clearCanvasInternal = () => {
+    const ctx = ctxRef.current;
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
+  };
+  useEffect(() => {
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
+  }, []);
+
+  useEffect(() => {
+    if (!ctxRef.current) return;
+    ctxRef.current.strokeStyle = color;
+    ctxRef.current.lineWidth = lineWidth;
+  }, [color, lineWidth]);
 
   return (
     <div id="drawingCanvas">
