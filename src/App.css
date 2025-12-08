@@ -282,7 +282,11 @@ button {
 
 .app-container.fullscreen .tool-group {
   flex-direction: column;
-  width: 80px;
+  width: 60px;
+}
+
+.app-container.fullscreen .toolbar {
+  z-index: 100;
 }
 
 .app-container.fullscreen .tool label {
@@ -303,4 +307,24 @@ button {
 
 .app-container.fullscreen input[type="color"] {
   margin-bottom: 60px;
+}
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    /* allow wrapping */
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .tool-group {
+    flex: 1 1 100%;
+    /* each group takes full width */
+    justify-content: center;
+  }
+
+  .tool-group:last-child {
+    margin-top: 10px;
+    /* move buttons to second row */
+  }
 }
